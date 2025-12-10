@@ -2,6 +2,10 @@
 <%@page import="model.Categoria"%>
 <%@page import="java.util.ArrayList"%>
 <%@page import="java.text.NumberFormat"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="java.util.Date"%>
+<%@page import="java.util.HashMap"%>
+<%@page import="java.util.Map"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
@@ -122,31 +126,52 @@
                     if (partes.length >= 3) {
                         usuarioId = Integer.parseInt(partes[0].trim());
                         usuarioNome = partes[1].trim();
+                    } else {
+                        throw new Exception("Formato inválido de sessão");
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            
-            // Carrega apenas movimentações deste usuário
-            ArrayList<Movimentacao> dados = new ArrayList<>();
-            NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance();
-            
-            if (usuarioId > 0) {
-                try {
-                    Movimentacao mov = new Movimentacao();
-                    dados = mov.loadByUsuarioId(usuarioId);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    // Redireciona para erro com mensagem específica
+                    response.sendRedirect(request.getContextPath() + "/home/erro_pagina.html?message=Erro ao processar sessão do usuário: " + 
+                                         java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                    return;
                 }
             } else {
-                // Se não tem usuário logado, redireciona
+                // Se não tem usuário logado, redireciona para login
                 response.sendRedirect(request.getContextPath() + "/home/login.jsp");
+                return;
+            }
+            
+            // Carrega todas as movimentações e filtra pelo usuário
+            ArrayList<Movimentacao> todasMovimentacoes = new ArrayList<>();
+            ArrayList<Movimentacao> dados = new ArrayList<>();
+            NumberFormat formatoMoeda = null;
+            SimpleDateFormat dateFormat = null;
+            
+            try {
+                formatoMoeda = NumberFormat.getCurrencyInstance();
+                dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+                
+                // Tenta carregar todas as movimentações
+                Movimentacao mov = new Movimentacao();
+                todasMovimentacoes = mov.getAllTableEntities();
+                
+                // Filtra apenas as do usuário logado
+                for (Movimentacao m : todasMovimentacoes) {
+                    if (m.getUsuarioId() == usuarioId) {
+                        dados.add(m);
+                    }
+                }
+                
+            } catch (Exception e) {
+                // Redireciona para página de erro
+                response.sendRedirect(request.getContextPath() + "/home/erro_pagina.html?message=Erro ao carregar movimentações: " + 
+                                     java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
                 return;
             }
         %>
         
         <h1>Minhas Movimentações</h1> 
+        
         
         <a href="<%= request.getContextPath() %>/home/app/movimentacao_form.jsp?action=create" class="add-link">
             + Nova Movimentação
@@ -157,7 +182,34 @@
                 Você ainda não possui movimentações cadastradas.<br>
                 Clique em "+ Nova Movimentação" para começar.
             </div>
-        <% } else { %>
+        <% } else { 
+            
+            // Variáveis para os totais
+            float totalReceitas = 0;
+            float totalDespesas = 0;
+            
+            // Cache para categorias deste usuário
+            Map<Integer, Categoria> cacheCategorias = new HashMap<>();
+            
+            // Primeiro, carrega todas as categorias
+            try {
+                Categoria cat = new Categoria();
+                ArrayList<Categoria> todasCategorias = cat.getAllTableEntities();
+                
+                // Filtra apenas categorias deste usuário
+                for (Categoria c : todasCategorias) {
+                    if (c.getUsuarioId() == usuarioId) {
+                        cacheCategorias.put(c.getId(), c);
+                    }
+                }
+                
+            } catch (Exception e) {
+                // Redireciona para página de erro
+                response.sendRedirect(request.getContextPath() + "/home/erro_pagina.html?message=Erro ao carregar categorias: " + 
+                                     java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                return;
+            }
+        %>
         
         <table border="1">
             <tr>
@@ -166,6 +218,7 @@
                 <th>Valor</th>
                 <th>Data</th>
                 <th>Categoria</th>
+                <th>Tipo</th>
                 <th>Ações</th>
             </tr>
             
@@ -173,21 +226,45 @@
                 for(Movimentacao info : dados) {
                     // Determinar se é receita ou despesa
                     String classeValor = "valor-despesa";
-                    String nomeCategoria = "";
-                    String tipoCategoria = "";
+                    String nomeCategoria = "Não encontrada";
+                    String tipoCategoria = "desconhecido";
                     
                     try {
-                        Categoria cat = new Categoria();
-                        cat.setId(info.getCategoriaId());
-                        if (cat.load()) {
+                        // Obter a categoria do cache
+                        int categoriaId = info.getCategoriaId();
+                        Categoria cat = cacheCategorias.get(categoriaId);
+                        
+                        if (cat != null) {
                             nomeCategoria = cat.getNome();
                             tipoCategoria = cat.getTipo();
-                            if ("receita".equals(tipoCategoria)) {
+                            
+                            // Normaliza o tipo (remove espaços, converte para minúsculas)
+                            String tipoNormalizado = tipoCategoria.toLowerCase().trim();
+                            
+                            // Classifica como receita ou despesa (aceita singular e plural)
+                            if (tipoNormalizado.startsWith("receit")) { // receita ou receitas
                                 classeValor = "valor-receita";
+                                totalReceitas += info.getValor();
+                            } else if (tipoNormalizado.startsWith("despes")) { // despesa ou despesas
+                                totalDespesas += info.getValor();
                             }
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        // Se der erro em uma movimentação individual, apenas registra e continua
+                        // (não quebra a página inteira)
+                        System.err.println("Erro ao processar movimentação ID " + info.getId() + ": " + e.getMessage());
+                    }
+                    
+                    // Formatar data
+                    String dataFormatada = info.getDataMovimentacao();
+                    try {
+                        if (dataFormatada != null && !dataFormatada.isEmpty()) {
+                            // Tenta converter se for data
+                            Date data = new SimpleDateFormat("yyyy-MM-dd").parse(dataFormatada);
+                            dataFormatada = dateFormat.format(data);
+                        }
+                    } catch (Exception e) {
+                        // Mantém o formato original se não conseguir converter
                     }
             %>
             <tr>
@@ -196,9 +273,9 @@
                 <td class="<%= classeValor %>">
                     <%= formatoMoeda.format(info.getValor()) %>
                 </td>
-                <td><%= info.getDataMovimentacao() %></td>
-                <td><%= nomeCategoria.isEmpty() ? info.getCategoriaId() : nomeCategoria %></td>
-                
+                <td><%= dataFormatada %></td>
+                <td><%= nomeCategoria %></td>
+                <td><%= tipoCategoria %></td>
                 <td>
                     <a href="<%= request.getContextPath() %>/home/app/movimentacao_form.jsp?action=update&id=<%= info.getId() %>"
                        style="margin-right: 10px;">
@@ -212,33 +289,14 @@
                 </td>
             </tr>
             <%
-                }
+                } // fim do for
+                
+                // Calcular saldo
+                float saldo = totalReceitas - totalDespesas;
             %>
         </table>
         
         <!-- Estatísticas -->
-        <% 
-            float totalReceitas = 0;
-            float totalDespesas = 0;
-            
-            for(Movimentacao info : dados) {
-                try {
-                    Categoria cat = new Categoria();
-                    cat.setId(info.getCategoriaId());
-                    if (cat.load()) {
-                        if ("receita".equals(cat.getTipo())) {
-                            totalReceitas += info.getValor();
-                        } else if ("despesa".equals(cat.getTipo())) {
-                            totalDespesas += info.getValor();
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            
-            float saldo = totalReceitas - totalDespesas;
-        %>
         <div style="margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 5px; width: 90%;">
             <strong>Resumo Financeiro:</strong> 
             <span style="margin-left: 20px;">Total de Movimentações: <strong><%= dados.size() %></strong></span>
@@ -248,6 +306,7 @@
                 Saldo: <strong><%= formatoMoeda.format(saldo) %></strong>
             </span>
         </div>
+        
         <% } %>
     </body>
 </html>

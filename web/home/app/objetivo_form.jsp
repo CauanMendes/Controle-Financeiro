@@ -11,6 +11,7 @@
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -69,8 +70,10 @@
 </head>
 
 <body>
+    <%@include file="/home/app/modulos.jsp" %>
+    
 <div class="form-container">
-
+    
     <%
         Objetivo o = null;
         String action = request.getParameter("action");

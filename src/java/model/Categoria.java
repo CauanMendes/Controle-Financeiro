@@ -216,4 +216,30 @@ public class Categoria extends DataAccessObject {
         con.close();
         return false;
     }
+    
+    // Na classe Categoria
+public ArrayList<Categoria> loadByUsuarioId() throws Exception {
+    ArrayList<Categoria> lista = new ArrayList<>();
+    String sql = "SELECT * FROM categoria WHERE usuario_id = ?";
+    
+    try (Connection con = DataBaseConnections.getInstance().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+        
+        ps.setInt(1, this.usuarioId);
+        
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Categoria cat = new Categoria();
+                cat.setId(rs.getInt("id"));
+                cat.setNome(rs.getString("nome"));
+                cat.setTipo(rs.getString("tipo"));
+                cat.setUsuarioId(rs.getInt("usuario_id"));
+                lista.add(cat);
+            }
+        }
+    }
+    
+    return lista;
+}
+    
 }

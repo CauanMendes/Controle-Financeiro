@@ -158,5 +158,27 @@ public class Usuario extends DataAccessObject {
 
     return this.senha.equals(hash);
 }
+    
+    public boolean loadById() throws Exception {
+    String sql = "SELECT * FROM usuario WHERE id = ?";
+    
+    Connection con = DataBaseConnections.getInstance().getConnection();
+    
+    PreparedStatement ps = con.prepareStatement(sql);
+    
+    ps.setInt(1, this.id);
+    
+    ResultSet rs = ps.executeQuery();
+    
+    if (rs.next()) {
+        this.id = rs.getInt("id");
+        this.nome = rs.getString("nome");
+        this.senha = rs.getString("senha");
+        this.email = rs.getString("email");
+        return true;
+    }
+    
+    return false;
+}
 
 }

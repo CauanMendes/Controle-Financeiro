@@ -153,4 +153,30 @@ public class Movimentacao extends DataAccessObject {
         }
         return lista;
     }
+    
+    public ArrayList<Movimentacao> loadByUsuarioId() throws Exception {
+    ArrayList<Movimentacao> lista = new ArrayList<>();
+    String sql = "SELECT * FROM movimentacao WHERE usuario_id = ? ORDER BY data_movimentacao DESC";
+    
+    try (Connection con = DataBaseConnections.getInstance().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+        
+        ps.setInt(1, this.usuarioId);
+        
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Movimentacao mov = new Movimentacao();
+                mov.setId(rs.getInt("id"));
+                mov.setDescricao(rs.getString("descricao"));
+                mov.setValor(rs.getFloat("valor"));
+                mov.setDataMovimentacao(rs.getString("data_movimentacao"));
+                mov.setUsuarioId(rs.getInt("usuario_id"));
+                mov.setCategoriaId(rs.getInt("categoria_id"));
+                lista.add(mov);
+            }
+        }
+    }
+    
+    return lista;
+}
 }
