@@ -123,112 +123,6 @@
             font-size: 13px;
         }
     </style>
-    <script>
-        // Captura parâmetros da URL
-        function getUrlParameter(name) {
-            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-            var results = regex.exec(location.search);
-            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-        }
-        
-        // Validação do formulário
-        function validateForm() {
-            var isValid = true;
-            var errorMessage = "";
-            
-            // Resetar estilos de erro
-            document.getElementById('id').classList.remove('error-input');
-            document.getElementById('nome').classList.remove('error-input');
-            document.getElementById('email').classList.remove('error-input');
-            document.getElementById('senha').classList.remove('error-input');
-            
-            // Validação do ID (agora obrigatório sempre)
-            var id = document.getElementById('id').value.trim();
-            if (id === '') {
-                document.getElementById('id').classList.add('error-input');
-                errorMessage += "ID é obrigatório.<br>";
-                isValid = false;
-            } else if (!/^\d+$/.test(id)) {
-                document.getElementById('id').classList.add('error-input');
-                errorMessage += "ID deve conter apenas números.<br>";
-                isValid = false;
-            }
-            
-            // Validação do nome
-            var nome = document.getElementById('nome').value.trim();
-            if (nome === '') {
-                document.getElementById('nome').classList.add('error-input');
-                errorMessage += "Nome é obrigatório.<br>";
-                isValid = false;
-            }
-            
-            // Validação do email
-            var email = document.getElementById('email').value.trim();
-            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (email === '') {
-                document.getElementById('email').classList.add('error-input');
-                errorMessage += "Email é obrigatório.<br>";
-                isValid = false;
-            } else if (!emailRegex.test(email)) {
-                document.getElementById('email').classList.add('error-input');
-                errorMessage += "Email inválido. Use o formato exemplo@dominio.com<br>";
-                isValid = false;
-            }
-            
-            // Validação da senha
-            var senha = document.getElementById('senha').value;
-            if (senha === '') {
-                document.getElementById('senha').classList.add('error-input');
-                errorMessage += "Senha é obrigatória.<br>";
-                isValid = false;
-            }
-            
-            // Mostrar mensagens de erro
-            if (!isValid) {
-                document.getElementById('errorMessage').innerHTML = errorMessage;
-                document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('successMessage').style.display = 'none';
-            }
-            
-            return isValid;
-        }
-        
-        // Ao carregar a página
-        window.onload = function() {
-            // Verificar se há mensagens de erro/sucesso na URL
-            var messageParam = getUrlParameter('message');
-            var errorParam = getUrlParameter('error');
-            var successParam = getUrlParameter('success');
-            
-            if (messageParam) {
-                document.getElementById('errorMessage').innerText = messageParam;
-                document.getElementById('errorMessage').style.display = 'block';
-            } else if (errorParam) {
-                document.getElementById('errorMessage').innerText = errorParam;
-                document.getElementById('errorMessage').style.display = 'block';
-                
-                if (errorParam.includes('ID') || errorParam.includes('id')) {
-                    document.getElementById('id').classList.add('error-input');
-                }
-                if (errorParam.includes('Email') || errorParam.includes('email')) {
-                    document.getElementById('email').classList.add('error-input');
-                }
-            } else if (successParam) {
-                document.getElementById('successMessage').innerText = successParam;
-                document.getElementById('successMessage').style.display = 'block';
-            }
-            
-            // Focar no campo ID se estiver vazio
-            if (document.getElementById('id').value === '') {
-                document.getElementById('id').focus();
-            } else if (document.getElementById('nome').value === '') {
-                document.getElementById('nome').focus();
-            } else {
-                document.getElementById('id').focus();
-            }
-        };
-    </script>
 </head>
 
 <body>
@@ -279,13 +173,6 @@
     %>
 
     <h1><%= action.equals("update") ? "Editar Usuário" : "Novo Usuário" %></h1>
-    
-    <% if (action.equals("create")) { %>
-    <div class="info-note">
-        <strong>Importante:</strong> O ID é obrigatório pois o banco não tem auto-incremento.
-        Escolha um número único que ainda não exista no sistema.
-    </div>
-    <% } %>
     
     <% if (errorMessage != null) { %>
     <div class="error-message" id="errorMessage" style="display: block;">

@@ -8,6 +8,22 @@
     <session-config>
         <session-timeout> 2880</session-timeout>
     </session-config>
+    
+        <error-page>
+        <exception-type>java.lang.Exception</exception-type>
+        <location>/home/erro_pagina.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/home/erro_pagina.jsp</location>
+    </error-page>
+
+    <error-page>
+        <error-code>404</error-code>
+        <location>/home/erro_pagina.jsp</location>
+    </error-page>
+    
+    
     <servlet>
         <servlet-name>GetPost</servlet-name>
         <servlet-class>aulas.servlet.getpost.GetPost</servlet-class>
@@ -33,4 +49,6 @@
         <filter-name>AutenticadorApp</filter-name>
         <url-pattern>/home/app/*</url-pattern>
     </filter-mapping>
+    
+
 </web-app>

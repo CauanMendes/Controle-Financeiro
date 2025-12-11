@@ -1,4 +1,4 @@
 <config>
 	<settings verbose="true"/>
-	<database url="jdbc:mysql://localhost:3306/controlefinanceiro" user="root" password="root"/>
+	<database url="jdbc:mysql://localhost:3307/controlefinanceiro" user="root" password="root"/>
 </config>
