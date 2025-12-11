@@ -104,43 +104,51 @@
         <%@include file="/home/app/modulos.jsp" %>
         
         <% 
-            // Recupera o usuário da sessão
-            String usuarioSessao = (String) session.getAttribute("usuario");
-            int usuarioId = 0;
-            String usuarioNome = "";
-            ArrayList<Objetivo> dados = new ArrayList<>();
-            NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance();
-            
-            if (usuarioSessao != null && usuarioSessao.contains(",")) {
-                try {
-                    // Extrai nome e email da string "(Nome, email)"
-                    String[] partes = usuarioSessao.split(",");
-                    if (partes.length >= 2) {
-                        usuarioNome = partes[0].trim().replace("(", "");
-                        String usuarioEmail = partes[1].trim().replace(")", "");
-                        
-                        // Carrega o usuário para pegar o ID
-                        Usuario usuario = new Usuario();
-                        usuario.setEmail(usuarioEmail);
-                        if (usuario.loadByEmail()) {
-                            usuarioId = usuario.getId();
-                            
-                            // Carrega apenas os objetivos deste usuário
-                            if (usuarioId > 0) {
-                                Objetivo obj = new Objetivo();
-                                dados = obj.loadByUsuarioId(usuarioId);
-                            }
-                        }
+    // Recupera o usuário da sessão
+    String usuarioSessao = (String) session.getAttribute("usuario");
+    int usuarioId = 0;
+    String usuarioNome = "";
+    String usuarioEmail = "";
+    ArrayList<Objetivo> dados = new ArrayList<>();
+    NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance();
+
+    if (usuarioSessao != null && usuarioSessao.startsWith("(") && usuarioSessao.endsWith(")")) {
+        try {
+            // Remove os parênteses e divide a string
+            usuarioSessao = usuarioSessao.substring(1, usuarioSessao.length() - 1);
+            String[] partes = usuarioSessao.split(",\\s*"); // Divide considerando possível espaço após a vírgula
+
+            if (partes.length == 3) {
+                // A string tem a estrutura correta
+                usuarioId = Integer.parseInt(partes[0].trim());
+                usuarioNome = partes[1].trim();
+                usuarioEmail = partes[2].trim();
+
+                // Carrega o usuário para pegar o ID e dados
+                Usuario usuario = new Usuario();
+                usuario.setEmail(usuarioEmail);
+                if (usuario.loadByEmail()) {
+                    // Carrega os objetivos do usuário
+                    if (usuarioId > 0) {
+                        Objetivo obj = new Objetivo();
+                        dados = obj.loadByUsuarioId(usuarioId);
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    out.println("<div style='color: red; padding: 10px;'>Erro: " + e.getMessage() + "</div>");
                 }
             } else {
+                out.println("<div style='color: red; padding: 10px;'>Sessão do usuário inválida ou malformada.</div>");
                 response.sendRedirect(request.getContextPath() + "/home/login.jsp");
                 return;
             }
-        %>
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.println("<div style='color: red; padding: 10px;'>Erro: " + e.getMessage() + "</div>");
+        }
+    } else {
+        out.println("<div style='color: red; padding: 10px;'>Sessão do usuário não encontrada.</div>");
+        response.sendRedirect(request.getContextPath() + "/home/login.jsp");
+        return;
+    }
+%>
         
         <h1>Meus Objetivos</h1>
        
