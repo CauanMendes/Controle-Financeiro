@@ -61,7 +61,7 @@ public class Usuario extends DataAccessObject {
             if(senha.equals(this.senha) == false){
                 String senhaSal = getId() + senha + getId() / 2;
                 
-                MessageDigest md = MessageDigest.getInstance( "SHA-256" );
+                MessageDigest md = MessageDigest.getInstance( "SHA-512" );
                 
                 String hash = new BigInteger(1, md.digest(senhaSal.getBytes( "UTF-8" ))).toString(16);
                 
@@ -151,7 +151,7 @@ public class Usuario extends DataAccessObject {
     public boolean validarSenha(String senhaDigitada) throws Exception {
     String senhaSal = getId() + senhaDigitada + getId() / 2;
 
-    MessageDigest md = MessageDigest.getInstance("SHA-256");
+    MessageDigest md = MessageDigest.getInstance("SHA-512");
     String hash = new BigInteger(1, md.digest(senhaSal.getBytes("UTF-8"))).toString(16);
     
     
